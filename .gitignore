@@ -1,0 +1,38 @@
+# Virtual Environment
+.venv*/
+venv*/
+env*/
+ENV*/
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+
+# OS
+.DS_Store
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+
+# Model files (ถ้าใหญ่เกิน 100MB)
+*.h5
+*.keras
+*.pb
+*.ckpt
+
+# Other
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
