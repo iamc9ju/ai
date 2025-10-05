@@ -36,3 +36,33 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+# Virtual Environment
+.venv/
+.venv311/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
