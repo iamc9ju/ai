@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>แปลภาษามือแบบเรียลไทม์ (FastAPI, Python)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>แปลภาษามือแบบเรียลไทม์</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>กล้อง</h2>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <div class="controls">
+          <button id="btnStart">เริ่ม</button>
+          <button id="btnStop" disabled>หยุด</button>
+        </div>
+        <div id="status" class="status">สถานะ: -</div>
+      </div>
+      <div class="card">
+        <h2>ผลลัพธ์</h2>
+        <div id="word" class="word">-</div>
+        <div id="confidence" class="confidence">ความเชื่อมั่น: -</div>
+        <div class="note">
+          * ทำงานบนพอร์ตเดียว (FastAPI) และใช้ Python เท่านั้น<br/>
+          * ประมวลผลเฟรมผ่าน WebSocket → MediaPipe Hands → โมเดล Keras
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const SEQ_LEN = 30;
+    const FEATURES = 63;
+  </script>
+  <script src="/static/main.js"></script>
+</body>
+</html>
