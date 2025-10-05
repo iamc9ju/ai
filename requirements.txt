@@ -5,8 +5,7 @@ opencv-python==4.10.0.84
 python-multipart==0.0.9
 
 # หรือถ้าเป็น Apple Silicon (M1/M2/M3) ให้ใช้แทน:
-tensorflow-macos>=2.15.0
-tensorflow-metal>=1.1.0
+tensorflow==2.16.1
 
 # MediaPipe - ลองรุ่นที่รองรับ Mac
 mediapipe>=0.10.0
