@@ -1,40 +1,755 @@
 <!DOCTYPE html>
 <html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>แปลภาษามือแบบเรียลไทม์ (FastAPI, Python)</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
-<body>
-  <div class="container">
-    <h1>แปลภาษามือแบบเรียลไทม์</h1>
-    <div class="grid">
-      <div class="card">
-        <h2>กล้อง</h2>
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <div class="controls">
-          <button id="btnStart">เริ่ม</button>
-          <button id="btnStop" disabled>หยุด</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignStream - แปลภาษามือสด</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto,
+          "Noto Sans Thai", sans-serif;
+        background: #0f0f1a;
+        color: #fff;
+      }
+
+      /* Header */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 32px;
+        background: #1a1a2e;
+        border-bottom: 1px solid #2a2a3e;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      .logo-text h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .logo-text p {
+        font-size: 13px;
+        color: #9ca3af;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .stream-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* Main Container */
+      .main-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 80px);
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .main-container {
+          padding: 16px;
+        }
+      }
+
+      /* Video Section */
+      .video-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .video-wrapper {
+        width: 100%;
+        max-width: 1100px;
+        height: 100%;
+        max-height: 600px;
+        margin: 0 auto;
+        background: #16182a;
+        border-radius: 16px;
+        border: 1px solid #2a2a3e;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      @media (max-width: 768px) {
+        .video-wrapper {
+          max-height: 400px;
+        }
+      }
+
+      .live-badge {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        background: #ef4444;
+        padding: 8px 16px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        z-index: 10;
+      }
+
+
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        animation: blink 1s infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        50% {
+          opacity: 1;
+        }
+        51%,
+        100% {
+          opacity: 0.3;
+        }
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      canvas {
+        display: none;
+      }
+
+      .placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+      }
+
+      .video-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px 0;
+      }
+
+      .control-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #9ca3af;
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      .control-info {
+        font-size: 14px;
+        color: #6b7280;
+        text-align: center;
+      }
+
+      .control-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #9ca3af;
+      }
+
+      .control-info {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .btn-stream {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+        min-width: 100px;
+      }
+
+      .btn-stream:hover {
+        background: #059669;
+        transform: translateY(-1px);
+      }
+
+      .btn-stream:disabled {
+        background: #374151;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-stream.stop {
+        background: #ef4444;
+      }
+
+      .btn-stream.stop:hover:not(:disabled) {
+        background: #dc2626;
+      }
+
+      /* Translation Section */
+      .translation-section {
+        background: #16182a;
+        border-radius: 12px;
+        border: 1px solid #2a2a3e;
+        padding: 16px 20px;
+        flex-shrink: 0;
+        max-width: 800px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .translation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .translation-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .translation-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-speak {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+        color: white;
+        border: none;
+        padding: 5px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-speak:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+      }
+
+      .btn-speak:disabled {
+        background: #374151;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-speak.speaking {
+        background: #10b981;
+        animation: pulse-speak 1.5s infinite;
+      }
+
+      @keyframes pulse-speak {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .btn-clear {
+        background: transparent;
+        border: 1px solid #374151;
+        color: #9ca3af;
+        padding: 5px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-clear:hover {
+        background: #374151;
+        color: #fff;
+      }
+
+      .sentence-display {
+        background: #1f2937;
+        border-radius: 10px;
+        padding: 16px 18px;
+        min-height: 80px;
+        max-height: 100px;
+        overflow-y: auto;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #fff;
+        word-wrap: break-word;
+      }
+
+      .sentence-display::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .sentence-display::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sentence-display::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 3px;
+      }
+
+      .sentence-display.empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-style: italic;
+        font-size: 14px;
+      }
+
+      .word-item {
+        display: inline;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .word-item::after {
+        content: ' ';
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .footer-info {
+        margin-top: 10px;
+        text-align: center;
+        font-size: 10px;
+        color: #6b7280;
+      }
+
+      .status-online {
+        color: #10b981;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">👋</div>
+        <div class="logo-text">
+          <h1>SignStream</h1>
+          <p>แปลภาษามือสด</p>
         </div>
-        <div id="status" class="status">สถานะ: -</div>
       </div>
-      <div class="card">
-        <h2>ผลลัพธ์</h2>
-        <div id="word" class="word">-</div>
-        <div id="confidence" class="confidence">ความเชื่อมั่น: -</div>
-        <div class="note">
-          * ทำงานบนพอร์ตเดียว (FastAPI) และใช้ Python เท่านั้น<br/>
-          * ประมวลผลเฟรมผ่าน WebSocket → MediaPipe Hands → โมเดล Keras
+      <div class="status-indicator">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #1f2937; border-radius: 8px;">
+          <div class="status-dot"></div>
+          <span class="status-online">Online</span>
+        </div>
+        <div class="stream-controls">
+          <button id="btnStart" class="btn-stream">เริ่ม</button>
+          <button id="btnStop" class="btn-stream stop" disabled>หยุด</button>
         </div>
       </div>
     </div>
-  </div>
-  <script>
-    const SEQ_LEN = 30;
-    const FEATURES = 63;
-  </script>
-  <script src="/static/main.js"></script>
-</body>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Video Section -->
+      <div class="video-section">
+        <div class="video-wrapper" id="videoWrapper">
+          <div class="live-badge">
+            <div class="live-dot"></div>
+            LIVE
+          </div>
+          <div class="placeholder" id="placeholder"></div>
+          <video id="video" autoplay playsinline></video>
+          <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="video-controls">
+          <div>
+            <div class="control-title">แปลภาษามือแบบเรียลไทม์</div>
+            <div class="control-info">
+              <span id="streamStatus" style="color: #10b981">🟢 พร้อมใช้งาน</span>
+              • ระบบ AI แปลภาษามือ
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Translation Section -->
+      <div class="translation-section">
+        <div class="translation-header">
+          <div class="translation-title">
+            💬 ผลการแปล
+          </div>
+          <div class="translation-actions">
+            <button id="btnSpeak" class="btn-speak">
+              🔊 เล่นเสียง
+            </button>
+            <button id="btnClear" class="btn-clear">ล้างข้อความ</button>
+          </div>
+        </div>
+        <div class="sentence-display empty" id="sentenceDisplay">
+          รอการตรวจจับภาษามือ...
+        </div>
+        <div class="footer-info">
+          <span style="color: #10b981">🟢</span> FastAPI + MediaPipe + Keras • 
+          WebSocket → MediaPipe Hands → AI Model
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SEQ_LEN = 30;
+      const FEATURES = 63;
+      let lastWord = '';
+
+      // DOM Elements
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const placeholder = document.getElementById("placeholder");
+      const btnStart = document.getElementById("btnStart");
+      const btnStop = document.getElementById("btnStop");
+      const btnClear = document.getElementById("btnClear");
+      const btnSpeak = document.getElementById("btnSpeak");
+      const streamStatus = document.getElementById("streamStatus");
+      const sentenceDisplay = document.getElementById("sentenceDisplay");
+
+      // WebSocket & Processing variables
+      let ws = null;
+      let running = false;
+      let timer = null;
+      let busy = false;
+      let ctx = null;
+      let predictedWords = [];
+
+      // Text-to-Speech variables
+      const synth = window.speechSynthesis;
+      let isSpeaking = false;
+
+      // Performance settings
+      const TARGET_W = 320;
+      const JPEG_QUALITY = 0.6;
+      const SEND_INTERVAL = 100;
+
+      function setStatus(text, isError = false) {
+        if (isError) {
+          streamStatus.innerHTML = `🔴 ${text}`;
+          streamStatus.style.color = "#ef4444";
+        } else {
+          streamStatus.innerHTML = `🟢 ${text}`;
+          streamStatus.style.color = "#10b981";
+        }
+      }
+
+      function updateSentenceDisplay() {
+        if (predictedWords.length === 0) {
+          sentenceDisplay.className = 'sentence-display empty';
+          sentenceDisplay.textContent = 'รอการตรวจจับภาษามือ...';
+          btnSpeak.disabled = true;
+        } else {
+          sentenceDisplay.className = 'sentence-display';
+          sentenceDisplay.innerHTML = predictedWords
+            .map(word => `<span class="word-item">${word}</span>`)
+            .join('');
+          btnSpeak.disabled = false;
+        }
+      }
+
+      function speakText() {
+        if (predictedWords.length === 0) return;
+        
+        // Stop any ongoing speech
+        if (isSpeaking) {
+          synth.cancel();
+          isSpeaking = false;
+          btnSpeak.textContent = '🔊 เล่นเสียง';
+          btnSpeak.classList.remove('speaking');
+          return;
+        }
+
+        // Create speech utterance
+        const text = predictedWords.join(' ');
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set language to English (US)
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9; // ความเร็ว (0.1 - 10)
+        utterance.pitch = 1; // ระดับเสียง (0 - 2)
+        utterance.volume = 1; // ความดัง (0 - 1)
+
+        // Event handlers
+        utterance.onstart = () => {
+          isSpeaking = true;
+          btnSpeak.textContent = '⏸️ หยุดเสียง';
+          btnSpeak.classList.add('speaking');
+        };
+
+        utterance.onend = () => {
+          isSpeaking = false;
+          btnSpeak.textContent = '🔊 เล่นเสียง';
+          btnSpeak.classList.remove('speaking');
+        };
+
+        utterance.onerror = (event) => {
+          console.error('Speech error:', event);
+          isSpeaking = false;
+          btnSpeak.textContent = '🔊 เล่นเสียง';
+          btnSpeak.classList.remove('speaking');
+          alert('เกิดข้อผิดพลาดในการเล่นเสียง');
+        };
+
+        // Speak
+        synth.speak(utterance);
+      }
+
+      async function setupCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+
+          video.srcObject = stream;
+          await video.play();
+
+          // Show video, hide placeholder
+          video.style.display = "block";
+          placeholder.style.display = "none";
+          const dw = TARGET_W;
+          const dh = Math.round(video.videoHeight * (dw / video.videoWidth));
+          canvas.width = dw;
+          canvas.height = dh;
+          ctx = canvas.getContext("2d");
+
+          return true;
+        } catch (err) {
+          throw new Error("ไม่สามารถเข้าถึงกล้องได้: " + err.message);
+        }
+      }
+
+      function startWS() {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+        ws.onopen = () => {
+          setStatus("เชื่อมต่อแล้ว - กำลังส่งภาพ");
+        };
+
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+
+            if (msg.type === "prediction") {
+              const word = msg.word;
+              const confidence = Math.round(parseFloat(msg.confidence) * 100) / 100;
+
+              const isSameWord = word === lastWord;
+              if (!isSameWord) {
+                predictedWords.push(word);
+                updateSentenceDisplay();
+                lastWord = word;
+                setStatus("กำลังแปลภาษา");
+              }
+            } else if (msg.type === "status") {
+              setStatus(msg.message);
+            } else if (msg.type === "info") {
+              setStatus(msg.message);
+            } else if (msg.type === "error") {
+              setStatus("ERROR: " + msg.message, true);
+            }
+          } catch (e) {
+            console.error("WebSocket message error:", e);
+          } finally {
+            busy = false;
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error("WebSocket error:", err);
+          setStatus("เกิดข้อผิดพลาดในการเชื่อมต่อ", true);
+          busy = false;
+        };
+
+        ws.onclose = () => {
+          setStatus("ตัดการเชื่อมต่อ", true);
+          busy = false;
+        };
+      }
+
+      function grabAndSend() {
+        if (!running || !ws || ws.readyState !== 1) return;
+
+        // Skip frame if previous is still processing
+        if (busy) return;
+
+        // Draw current video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert to JPEG data URL
+        const dataURL = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+
+        try {
+          ws.send(JSON.stringify({ frame: dataURL }));
+          busy = true;
+        } catch (e) {
+          console.error("Send frame error:", e);
+          busy = false;
+        }
+      }
+
+      // Start button handler
+      btnStart.addEventListener("click", async () => {
+        if (running) return;
+
+        try {
+          setStatus("กำลังเปิดกล้อง...");
+          await setupCamera();
+
+          setStatus("กำลังเชื่อมต่อ...");
+          startWS();
+
+          running = true;
+          btnStart.disabled = true;
+          btnStop.disabled = false;
+
+          // Start sending frames
+          timer = setInterval(grabAndSend, SEND_INTERVAL);
+        } catch (err) {
+          console.error(err);
+          setStatus(err.message, true);
+          alert(err.message);
+        }
+      });
+
+      // Stop button handler
+      btnStop.addEventListener("click", () => {
+        running = false;
+
+        // Clear interval
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+
+        // Close WebSocket
+        if (ws && ws.readyState === 1) {
+          ws.close();
+        }
+
+        // Stop camera stream
+        const tracks = video?.srcObject?.getTracks?.() || [];
+        tracks.forEach((t) => t.stop());
+
+        // Hide video, show placeholder
+        video.style.display = "none";
+        placeholder.style.display = "flex";
+
+        // Reset buttons
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        busy = false;
+
+        setStatus("หยุดแล้ว", true);
+      });
+
+      // Clear button handler
+      btnClear.addEventListener("click", () => {
+        // Stop speaking if active
+        if (isSpeaking) {
+          synth.cancel();
+          isSpeaking = false;
+          btnSpeak.textContent = '🔊 เล่นเสียง';
+          btnSpeak.classList.remove('speaking');
+        }
+        
+        predictedWords = [];
+        lastWord = '';
+        updateSentenceDisplay();
+      });
+
+      // Speak button handler
+      btnSpeak.addEventListener("click", speakText);
+    </script>
+  </body>
 </html>
